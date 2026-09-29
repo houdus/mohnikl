@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+db
+data
+dev.log
+server.log
+download
+upload
+tests
+examples
+tool-results
+*.md
+!README-DEPLOY.md
+.env*
+!.env.example
