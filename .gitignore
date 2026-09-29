@@ -1,0 +1,23 @@
+# dependencies
+node_modules
+
+# next.js
+.next
+out
+
+# local data (analytics demo store)
+data
+db/*.db
+
+# env
+.env
+.env*.local
+
+# logs
+dev.log
+server.log
+
+# misc
+.DS_Store
+*.pem
+.vercel
