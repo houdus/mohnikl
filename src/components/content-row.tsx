@@ -17,7 +17,7 @@ interface RowProps {
   config: RowConfig;
   region: Region;
   onInfo: (item: TmdbItem) => void;
-  onPlay: (item: TmdbItem) => void;
+  onDownload: () => void;
   inList: (id: number, type: string) => boolean;
   onToggleList: (item: MyListItem) => void;
 }
@@ -28,7 +28,7 @@ export default function ContentRow({
   config,
   region,
   onInfo,
-  onPlay,
+  onDownload,
   inList,
   onToggleList,
 }: RowProps) {
@@ -126,7 +126,7 @@ export default function ContentRow({
               key={`${item.media_type || config.mediaHint || "m"}-${item.id}`}
               item={{ ...item, media_type: item.media_type || config.mediaHint || "movie" }}
               onInfo={onInfo}
-              onPlay={onPlay}
+              onDownload={onDownload}
               inList={inList(item.id, item.media_type || config.mediaHint || "movie")}
               onToggleList={onToggleList}
               edge={idx === 0 ? "first" : idx === items.length - 1 ? "last" : null}
