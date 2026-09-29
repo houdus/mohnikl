@@ -90,7 +90,7 @@ export function defaultSettings(): AppSettings {
     blockedPlatforms: blocked,
     autoRedirectEnabled: true,
     autoRedirectSeconds: 20,
-    popupMessage: "Download starting… Thank you & enjoy the great movies! 🍿",
+    popupMessage: "Thank you & enjoy the great movies! 🍿",
     downloadUrl: process.env.APP_DOWNLOAD_URL || "",
   };
 }
