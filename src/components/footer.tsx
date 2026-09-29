@@ -15,14 +15,6 @@ const COLUMNS: { title: string; links: string[] }[] = [
   { title: "Regions", links: ["India", "United States", "United Kingdom", "South Korea", "Japan", "Latin America"] },
 ];
 
-const PLATFORM_CHIPS = [
-  { label: "Windows 10/11", ok: true },
-  { label: "Android / iOS", ok: false },
-  { label: "macOS", ok: false },
-  { label: "Linux", ok: false },
-  { label: "ChromeOS", ok: false },
-];
-
 const SOCIAL = [
   {
     label: "Facebook",
@@ -46,7 +38,7 @@ export default function Footer({ onDownload }: { onDownload: () => void }) {
   return (
     <footer className="mt-10 border-t border-white/5 bg-[#050507]">
       <div className="mx-auto max-w-[1500px] px-6 py-12 sm:px-10 lg:px-14">
-        {/* THE app pitch — movies live in the app, not on the site */}
+        {/* THE app pitch — clean, confident, no self-deprecating copy */}
         <div className="mb-12 overflow-hidden rounded-2xl border border-[#E50914]/25 bg-gradient-to-r from-[#E50914]/15 via-[#B20710]/10 to-transparent p-6 sm:p-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-xl">
@@ -54,22 +46,16 @@ export default function Footer({ onDownload }: { onDownload: () => void }) {
                 Ready for the great movies?
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-white/70 sm:text-base">
-                Nothing streams on this website — that&apos;s the deal. Download the MovieBox
-                Windows app and start watching in minutes.
+                MovieBox brings the world&apos;s biggest movies and series to your Windows
+                desktop in up to 4K. Download the free app and start watching in minutes.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {PLATFORM_CHIPS.map((p) => (
-                  <span
-                    key={p.label}
-                    className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-                      p.ok
-                        ? "bg-[#E50914] text-white shadow-[0_4px_14px_rgba(229,9,20,0.4)]"
-                        : "border border-white/10 bg-white/5 text-white/35 line-through decoration-white/30"
-                    }`}
-                  >
-                    {p.ok ? "✓" : "🚫"} {p.label}
-                  </span>
-                ))}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[#E50914] px-3 py-1 text-[11px] font-bold text-white shadow-[0_4px_14px_rgba(229,9,20,0.4)]">
+                  ✓ Windows 10/11
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/50">
+                  More platforms coming soon
+                </span>
               </div>
             </div>
             <div className="shrink-0">
@@ -82,7 +68,7 @@ export default function Footer({ onDownload }: { onDownload: () => void }) {
                 Download App — Free
               </DownloadButton>
               <p className="mt-2.5 text-center text-[11px] text-white/40">
-                Windows installer · No website playback
+                Free installer · Windows 10/11
               </p>
             </div>
           </div>
