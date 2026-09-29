@@ -1,0 +1,19 @@
+# Render.com — one-click blueprint (free plan works)
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: moviebox-international
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: APP_DOWNLOAD_URL
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
