@@ -54,6 +54,14 @@ const REGION_FLAGS: Record<string, string> = {
   DE: "🇩🇪", ES: "🇪🇸", BR: "🇧🇷", MX: "🇲🇽", AU: "🇦🇺", CA: "🇨🇦", NG: "🇳🇬", TR: "🇹🇷",
 };
 
+const REGION_NAMES: Record<string, string> = {
+  "": "Global", IN: "India", US: "United States", GB: "United Kingdom",
+  KR: "South Korea", JP: "Japan", FR: "France", DE: "Germany", ES: "Spain",
+  BR: "Brazil", MX: "Mexico", AU: "Australia", CA: "Canada", NG: "Nigeria", TR: "Türkiye",
+};
+
+const regionName = (code: string) => REGION_NAMES[code] || code || "—";
+
 const EVENT_STYLES: Record<string, string> = {
   page_view: "bg-white/10 text-white/70",
   region_switch: "bg-teal-500/15 text-teal-300",
@@ -424,7 +432,7 @@ export default function AdminDashboard() {
                 return (
                   <div key={r.code} className="flex items-center gap-2 text-xs">
                     <span className="w-6 text-base leading-none">{REGION_FLAGS[r.code] || "🌍"}</span>
-                    <span className="w-24 shrink-0 truncate text-white/80">{r.code || "Global"}</span>
+                    <span className="w-24 shrink-0 truncate text-white/80">{regionName(r.code)}</span>
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                       <div className="h-full rounded-full bg-teal-400" style={{ width: `${(r.views / max) * 100}%` }} />
                     </div>
@@ -455,27 +463,42 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   )}
-                  {stats.recent.map((e, i) => (
-                    <tr key={`${e.createdAt}-${i}`} className="border-t border-white/5">
-                      <td className="whitespace-nowrap py-2 pr-2 tabular-nums text-white/50">
-                        {new Date(e.createdAt).toLocaleTimeString([], { hour12: false })}
-                      </td>
-                      <td className="py-2 px-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${EVENT_STYLES[e.type] || "bg-white/10 text-white/70"}`}>
-                          {EVENT_LABELS[e.type] || e.type}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 text-white/70">{PLATFORM_NAMES[e.platform] || e.platform}</td>
-                      <td className="py-2 px-2 text-white/60">{e.region || "—"}</td>
-                      <td className="py-2 pl-2 text-white/45">
-                        {e.type === "download" && typeof e.meta?.src === "string"
-                          ? `via ${e.meta.src}`
-                          : e.type === "region_switch" && typeof e.meta?.to === "string"
-                            ? `→ ${e.meta.to}`
-                            : e.path}
-                      </td>
-                    </tr>
-                  ))}
+                  {stats.recent.map((e, i) => {
+                    const switchTo = e.type === "region_switch" && typeof e.meta?.to === "string" ? e.meta.to : null;
+                    const switchFrom = e.type === "region_switch" && typeof e.meta?.from === "string" ? e.meta.from : null;
+                    const shownRegion = switchTo ?? e.region;
+                    return (
+                      <tr key={`${e.createdAt}-${i}`} className="border-t border-white/5">
+                        <td className="whitespace-nowrap py-2 pr-2 tabular-nums text-white/50">
+                          {new Date(e.createdAt).toLocaleTimeString([], { hour12: false })}
+                        </td>
+                        <td className="py-2 px-2">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${EVENT_STYLES[e.type] || "bg-white/10 text-white/70"}`}>
+                            {EVENT_LABELS[e.type] || e.type}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-white/70">{PLATFORM_NAMES[e.platform] || e.platform}</td>
+                        <td className="whitespace-nowrap py-2 px-2 text-white/70">
+                          {shownRegion ? (
+                            <span>
+                              {REGION_FLAGS[shownRegion] || "🌍"} {regionName(shownRegion)}
+                            </span>
+                          ) : (
+                            <span className="text-white/30">—</span>
+                          )}
+                        </td>
+                        <td className="py-2 pl-2 text-white/45">
+                          {switchFrom && switchTo
+                            ? `${REGION_FLAGS[switchFrom] || ""} ${regionName(switchFrom)} → ${regionName(switchTo)}`
+                            : e.type === "download" && typeof e.meta?.src === "string"
+                              ? `via ${e.meta.src}`
+                              : e.type === "detail_open" && typeof e.meta?.id !== "undefined"
+                                ? `TMDB #${String(e.meta.id)}${e.meta.mediaType ? ` · ${String(e.meta.mediaType)}` : ""}`
+                                : e.path}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
