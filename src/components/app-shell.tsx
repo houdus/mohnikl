@@ -96,7 +96,8 @@ export default function AppShell({ settings }: { settings: PublicSettings }) {
     };
   }, [settings.autoRedirectEnabled, settings.autoRedirectSeconds]);
 
-  // Restore region preference (async boundary: keeps SSR-safe hydration)
+  // Restore region preference (async boundary: keeps SSR-safe hydration).
+  // Seeds the default region too, so analytics always carry a region.
   useEffect(() => {
     let saved: Region | null = null;
     try {
@@ -111,20 +112,25 @@ export default function AppShell({ settings }: { settings: PublicSettings }) {
     if (saved) {
       const s = saved;
       queueMicrotask(() => setRegion(s));
+    } else {
+      try {
+        localStorage.setItem(REGION_KEY, JSON.stringify(DEFAULT_REGION));
+      } catch {
+        /* ignore */
+      }
     }
   }, []);
 
   const changeRegion = useCallback(
-    (r: Region) => {
-      setRegion((prev) => {
-        track("region_switch", { from: prev.code, to: r.code });
-        return r;
-      });
+    (r: Region, fromCode: string) => {
+      // persist FIRST so the region_switch event records the NEW region
       try {
         localStorage.setItem(REGION_KEY, JSON.stringify(r));
       } catch {
         /* ignore */
       }
+      setRegion(r);
+      track("region_switch", { from: fromCode, to: r.code });
     },
     []
   );
@@ -200,7 +206,7 @@ export default function AppShell({ settings }: { settings: PublicSettings }) {
 
       <Navbar
         region={region}
-        onRegionChange={changeRegion}
+        onRegionChange={(r) => changeRegion(r, region.code)}
         onOpenSearch={() => setSearchOpen(true)}
         onOpenMyList={() => {
           document.getElementById("my-list")?.scrollIntoView({ behavior: "smooth" });
@@ -224,7 +230,7 @@ export default function AppShell({ settings }: { settings: PublicSettings }) {
             config={visibleRows[0]}
             region={region}
             onInfo={openInfo}
-            onPlay={openInfo}
+            onDownload={openDownloadPopup}
             inList={has}
             onToggleList={handleToggle}
           />
@@ -246,7 +252,7 @@ export default function AppShell({ settings }: { settings: PublicSettings }) {
               config={config}
               region={region}
               onInfo={openInfo}
-              onPlay={openInfo}
+              onDownload={openDownloadPopup}
               inList={has}
               onToggleList={handleToggle}
             />
@@ -259,7 +265,6 @@ export default function AppShell({ settings }: { settings: PublicSettings }) {
       <DetailModal
         item={detailItem}
         onClose={() => setDetailItem(null)}
-        onPlay={() => {}}
         inList={has}
         onToggleList={handleToggle}
         onOpenItem={openInfoById}
