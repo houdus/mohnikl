@@ -23,7 +23,7 @@ export default function PlatformGate({ blockedPlatforms }: Props) {
 
   useEffect(() => {
     const platform = detectPlatform(navigator.userAgent);
-    if (blockedPlatforms.includes(platform)) {
+    if (platform !== "windows" && blockedPlatforms.includes(platform)) {
       // Mismatch between header UA and browser UA → cover the app.
       // The overlay is opaque and full-screen; also kill scrolling.
       document.body.style.overflow = "hidden";
