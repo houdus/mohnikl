@@ -2,9 +2,11 @@
 
 // ============================================================
 // MovieCard — Netflix signature hover interaction:
-// poster scales up, siblings stay put, an info panel slides in
-// with action buttons (Play / Add / Like) + meta + genres.
+// an expanded preview card pops up centered ON the poster,
+// with action buttons (Download / Add / Info) + meta + genres.
 // Edge cards flip their transform-origin so nothing clips.
+// NOTE: no play button anywhere — watching happens in the app,
+// the hover card funnels to the download.
 // ============================================================
 
 import { memo, useState } from "react";
@@ -18,17 +20,18 @@ import {
   type TmdbItem,
 } from "@/lib/tmdb";
 import type { MyListItem } from "@/lib/use-my-list";
+import DownloadButton, { DownloadIcon } from "./download-button";
 
 interface CardProps {
   item: TmdbItem;
   onInfo: (item: TmdbItem) => void;
-  onPlay: (item: TmdbItem) => void;
+  onDownload: () => void;
   inList: boolean;
   onToggleList: (item: MyListItem) => void;
   edge?: "first" | "last" | null;
 }
 
-function MovieCardInner({ item, onInfo, onPlay, inList, onToggleList, edge }: CardProps) {
+function MovieCardInner({ item, onInfo, onDownload, inList, onToggleList, edge }: CardProps) {
   const poster = img(item.poster_path, "w500");
   const backdrop = img(item.backdrop_path, "w780");
   const title = titleOf(item);
@@ -60,7 +63,7 @@ function MovieCardInner({ item, onInfo, onPlay, inList, onToggleList, edge }: Ca
       data-item-id={`${isTv ? "tv" : "movie"}-${item.id}`}
       onMouseEnter={() => setHovered(true)}
     >
-      {/* Poster (idle) */}
+      {/* Poster (idle) — stays put, the preview covers it on hover */}
       <button
         onClick={() => onInfo(item)}
         className="block w-[136px] cursor-pointer overflow-hidden rounded-md bg-[#16161F] transition-all duration-300 sm:w-[168px] lg:w-[188px]"
@@ -71,7 +74,7 @@ function MovieCardInner({ item, onInfo, onPlay, inList, onToggleList, edge }: Ca
             src={poster || backdrop || ""}
             alt={title}
             loading="lazy"
-            className="aspect-[2/3] w-full object-cover transition duration-300 group-hover/card:opacity-0"
+            className="aspect-[2/3] w-full object-cover"
           />
         ) : (
           <div className="grid aspect-[2/3] w-full place-items-center text-white/30">
@@ -82,28 +85,39 @@ function MovieCardInner({ item, onInfo, onPlay, inList, onToggleList, edge }: Ca
         )}
       </button>
 
-      {/* Hover expand — absolute so siblings don't reflow */}
+      {/* Hover preview — perfectly centered on the poster.
+          Tailwind v4 note: -translate-x/y-1/2 use the CSS `translate`
+          property; never override it inline or centering breaks. */}
       <div
-        className={`pointer-events-none absolute left-1/2 top-1/2 z-40 w-[168px] -translate-x-1/2 -translate-y-1/2 scale-0 overflow-hidden rounded-lg bg-[#181820] opacity-0 shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-all delay-150 duration-200 group-hover/card:pointer-events-auto group-hover/card:scale-110 group-hover/card:opacity-100 sm:w-[200px] lg:w-[220px] ${originClass} max-lg:!left-1/2`}
-        style={{ translate: "none" }}
+        className={`pointer-events-none absolute left-1/2 top-1/2 z-40 w-[176px] -translate-x-1/2 -translate-y-1/2 scale-75 overflow-hidden rounded-lg bg-[#181820] opacity-0 shadow-[0_24px_60px_rgba(0,0,0,0.85)] ring-1 ring-white/10 transition-all duration-200 ease-out group-hover/card:pointer-events-auto group-hover/card:delay-150 group-hover/card:scale-100 group-hover/card:opacity-100 sm:w-[204px] lg:w-[224px] ${originClass}`}
       >
-        {hovered && (backdrop || poster) ? (
-          <img src={backdrop || poster || ""} alt="" className="aspect-video w-full object-cover" />
-        ) : (
-          <div className="aspect-video w-full bg-[#22222C]" />
-        )}
+        <button
+          onClick={() => onInfo(item)}
+          className="block w-full cursor-pointer text-left"
+          aria-label={`More info about ${title}`}
+        >
+          {hovered && (backdrop || poster) ? (
+            <img
+              src={backdrop || poster || ""}
+              alt=""
+              className="aspect-video w-full object-cover"
+            />
+          ) : (
+            <div className="aspect-video w-full bg-[#22222C]" />
+          )}
+        </button>
 
         <div className="space-y-2 p-3">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => onInfo(item)}
-              className="grid h-8 w-8 place-items-center rounded-full bg-white text-black transition hover:bg-white/80"
-              aria-label={`Play ${title}`}
+            {/* Download — the primary action (watching lives in the app) */}
+            <DownloadButton
+              src="card-hover"
+              onTriggered={onDownload}
+              className="grid h-8 w-8 place-items-center rounded-full bg-[#E50914] text-white shadow-[0_4px_14px_rgba(229,9,20,0.55)] transition hover:bg-[#F6121D]"
+              ariaLabel={`Download the app to watch ${title}`}
             >
-              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </button>
+              <DownloadIcon className="h-4 w-4 fill-current" />
+            </DownloadButton>
             <button
               onClick={() => onToggleList(toListItem())}
               className={`grid h-8 w-8 place-items-center rounded-full border transition ${
