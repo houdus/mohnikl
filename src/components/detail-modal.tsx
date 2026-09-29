@@ -1,10 +1,12 @@
 "use client";
 
 // ============================================================
-// DetailModal — Netflix-style hero modal:
-// big backdrop with muted trailer autoplay, title, match %,
-// meta chips, cast/genres, and "More Like This" grid — all
-// live from TMDB append_to_response.
+// DetailModal — Netflix-style title modal, DETAILS FIRST:
+// big backdrop (not a giant autoplaying video), title + full
+// meta + actions up front; the trailer plays ONLY on demand in
+// the same contained hero slot, so nothing hides the details.
+// Cast, genres, rating, description and "More Like This" are
+// all live from TMDB append_to_response.
 // ============================================================
 
 import { useEffect, useRef, useState } from "react";
@@ -20,12 +22,12 @@ import {
   type TmdbItem,
 } from "@/lib/tmdb";
 import type { MyListItem } from "@/lib/use-my-list";
+import { track } from "@/lib/tracker";
 import DownloadButton, { DownloadIcon } from "./download-button";
 
 interface ModalProps {
   item: { id: number; mediaType: "movie" | "tv" } | null;
   onClose: () => void;
-  onPlay: (item: TmdbItem) => void;
   inList: (id: number, type: string) => boolean;
   onToggleList: (item: MyListItem) => void;
   onOpenItem: (id: number, mediaType: "movie" | "tv") => void;
@@ -35,7 +37,6 @@ interface ModalProps {
 export default function DetailModal({
   item,
   onClose,
-  onPlay,
   inList,
   onToggleList,
   onOpenItem,
@@ -43,8 +44,7 @@ export default function DetailModal({
 }: ModalProps) {
   const [detail, setDetail] = useState<TmdbDetail | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
-  const [muted, setMuted] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [playing, setPlaying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Render-time adjustment: reset when the selected item changes
@@ -54,6 +54,7 @@ export default function DetailModal({
     setPrevKey(detailKey);
     setDetail(null);
     setTrailerKey(null);
+    setPlaying(false);
   }
 
   useEffect(() => {
@@ -103,6 +104,11 @@ export default function DetailModal({
     .filter((r) => r.poster_path)
     .slice(0, 9);
 
+  const playTrailer = () => {
+    setPlaying(true);
+    track("trailer_open", { id: item.id, mediaType: isTv ? "tv" : "movie" });
+  };
+
   return (
     <div
       className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:p-8"
@@ -116,103 +122,148 @@ export default function DetailModal({
         className="mx-auto w-full max-w-[900px] overflow-hidden rounded-none bg-[#14141B] shadow-[0_30px_90px_rgba(0,0,0,0.9)] sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Hero area */}
-        <div className="relative aspect-video w-full bg-black">
-          {trailerKey ? (
-            <iframe
-              ref={iframeRef}
-              key={trailerKey}
-              src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&rel=0&modestbranding=1&loop=1&playlist=${trailerKey}&iv_load_policy=3`}
-              className="absolute inset-0 h-full w-full"
-              allow="autoplay; encrypted-media"
-              title="Trailer"
-            />
-          ) : detail?.backdrop_path ? (
-            <img src={img(detail.backdrop_path, "w1280") || ""} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 animate-pulse bg-[#1C1C25]" />
-          )}
-
-          {/* Bottom fade into modal body */}
-          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[#14141B] to-transparent" />
-
-          {/* Controls */}
-          <div className="absolute right-4 top-4 flex gap-2">
-            {trailerKey && (
+        {/* ── Hero slot: backdrop image by default, trailer on demand ── */}
+        <div className="relative aspect-video max-h-[480px] w-full bg-black">
+          {playing && trailerKey ? (
+            <>
+              <iframe
+                key={trailerKey}
+                src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&mute=1&rel=0`}
+                className="absolute inset-0 h-full w-full"
+                allow="autoplay; encrypted-media; fullscreen"
+                title="Trailer"
+                allowFullScreen
+              />
               <button
-                onClick={() => setMuted((m) => !m)}
-                className="grid h-9 w-9 place-items-center rounded-full border border-white/40 bg-black/50 text-white backdrop-blur transition hover:border-white"
-                aria-label={muted ? "Unmute trailer" : "Mute trailer"}
+                onClick={() => setPlaying(false)}
+                className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-black/70 px-3.5 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-black/90"
+                aria-label="Close trailer"
               >
-                <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current">
-                  {muted ? (
-                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-                  ) : (
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                  )}
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                </svg>
+                Close trailer
+              </button>
+            </>
+          ) : (
+            <>
+              {detail?.backdrop_path ? (
+                <img
+                  src={img(detail.backdrop_path, "w1280") || ""}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : detail?.poster_path ? (
+                <img
+                  src={img(detail.poster_path, "w780") || ""}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover object-top opacity-60"
+                />
+              ) : (
+                <div className="absolute inset-0 animate-pulse bg-[#1C1C25]" />
+              )}
+
+              {/* Bottom fade into the details */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#14141B] via-[#14141B]/30 to-transparent" />
+
+              {/* Close */}
+              <button
+                onClick={onClose}
+                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-[#14141B]/90 text-white transition hover:bg-[#1C1C25]"
+                aria-label="Close"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="grid h-9 w-9 place-items-center rounded-full bg-[#14141B]/90 text-white transition hover:bg-[#1C1C25]"
-              aria-label="Close"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-              </svg>
-            </button>
-          </div>
 
-          {/* Title overlay + actions */}
-          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-            {detail && (
-              <>
-                <h2 className="max-w-[80%] text-2xl font-black leading-tight text-white drop-shadow sm:text-4xl">
-                  {titleOf(detail)}
-                </h2>
-                <div className="mt-4 flex flex-wrap items-center gap-2.5">
-                  {/* NO watching here — the app is where the movie lives */}
-                  <DownloadButton
-                    src="modal"
-                    onTriggered={onDownload}
-                    className="flex items-center gap-2 rounded-md bg-[#E50914] px-5 py-2 text-sm font-bold text-white shadow-[0_6px_20px_rgba(229,9,20,0.5)] transition hover:bg-[#F6121D]"
-                  >
-                    <DownloadIcon className="h-5 w-5 fill-current" />
-                    Download App
-                  </DownloadButton>
-                  <button
-                    onClick={() =>
-                      detail &&
-                      onToggleList({
-                        id: detail.id,
-                        mediaType: isTv ? "tv" : "movie",
-                        title: titleOf(detail),
-                        posterPath: detail.poster_path,
-                        vote: detail.vote_average,
-                        year: yearOf(detail),
-                      })
-                    }
-                    className={`grid h-10 w-10 place-items-center rounded-full border-2 bg-black/40 transition ${
-                      inMyList ? "border-[#E50914] text-[#FF4D55]" : "border-white/50 text-white hover:border-white"
-                    }`}
-                    aria-label={inMyList ? "Remove from My List" : "Add to My List"}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                      {inMyList ? (
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                      ) : (
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              {/* Title + actions — always visible, never hidden by a video */}
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
+                {detail && (
+                  <>
+                    <div className="mb-1.5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.25em] text-white/60">
+                      <span className="text-base font-black tracking-widest text-[#E50914]">M</span>
+                      {isTv ? "Series" : "Film"}
+                    </div>
+                    <h2 className="max-w-[85%] text-2xl font-black leading-tight text-white drop-shadow sm:text-4xl">
+                      {titleOf(detail)}
+                    </h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                      <span className="font-bold text-emerald-400">
+                        {matchPct(detail.vote_average)} Match
+                      </span>
+                      <span className="text-white/80">{yearOf(detail)}</span>
+                      <span className="rounded border border-white/40 px-1.5 text-[11px] font-semibold text-white/80">
+                        {isTv ? "SERIES" : "FILM"}
+                      </span>
+                      {runtimeOf(detail) && (
+                        <span className="text-white/70">{runtimeOf(detail)}</span>
                       )}
-                    </svg>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                      {isTv && detail.number_of_seasons ? (
+                        <span className="text-white/70">
+                          {detail.number_of_seasons} Season
+                          {detail.number_of_seasons > 1 ? "s" : ""}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                      <DownloadButton
+                        src="modal"
+                        onTriggered={onDownload}
+                        className="flex items-center gap-2 rounded-md bg-[#E50914] px-5 py-2 text-sm font-bold text-white shadow-[0_6px_20px_rgba(229,9,20,0.5)] transition hover:bg-[#F6121D]"
+                      >
+                        <DownloadIcon className="h-5 w-5 fill-current" />
+                        Download App
+                      </DownloadButton>
+                      {trailerKey && (
+                        <button
+                          onClick={playTrailer}
+                          className="flex items-center gap-2 rounded-md border border-white/30 bg-black/40 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:border-white/70"
+                          aria-label="Watch trailer"
+                        >
+                          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                          Trailer
+                        </button>
+                      )}
+                      <button
+                        onClick={() =>
+                          detail &&
+                          onToggleList({
+                            id: detail.id,
+                            mediaType: isTv ? "tv" : "movie",
+                            title: titleOf(detail),
+                            posterPath: detail.poster_path,
+                            vote: detail.vote_average,
+                            year: yearOf(detail),
+                          })
+                        }
+                        className={`grid h-10 w-10 place-items-center rounded-full border-2 bg-black/40 transition ${
+                          inMyList
+                            ? "border-[#E50914] text-[#FF4D55]"
+                            : "border-white/50 text-white hover:border-white"
+                        }`}
+                        aria-label={inMyList ? "Remove from My List" : "Add to My List"}
+                      >
+                        <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                          {inMyList ? (
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          ) : (
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                          )}
+                        </svg>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Body */}
+        {/* ── Details body ── */}
         {!detail ? (
           <div className="space-y-3 p-6 sm:p-8">
             <div className="h-4 w-3/4 animate-pulse rounded bg-[#1F1F2A]" />
@@ -220,31 +271,18 @@ export default function DetailModal({
             <div className="h-24 animate-pulse rounded bg-[#1F1F2A]" />
           </div>
         ) : (
-          <div className="p-5 sm:p-8">
-            <div className="grid gap-6 sm:grid-cols-[2fr_1fr]">
+          <div className="p-5 pt-4 sm:p-8 sm:pt-5">
+            <div className="grid gap-6 sm:grid-cols-[3fr_2fr]">
               <div>
-                <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="font-bold text-emerald-400">{matchPct(detail.vote_average)} Match</span>
-                  <span className="text-white/80">{yearOf(detail)}</span>
-                  <span className="rounded border border-white/40 px-1.5 text-[11px] font-semibold text-white/80">
-                    {isTv ? "SERIES" : "HD"}
-                  </span>
-                  <span className="rounded bg-white/15 px-1.5 py-0.5 text-[11px] font-semibold uppercase text-white/90">
-                    {detail.original_language}
-                  </span>
-                  {runtimeOf(detail) && <span className="text-white/80">{runtimeOf(detail)}</span>}
-                  {isTv && detail.number_of_seasons ? (
-                    <span className="text-white/80">
-                      {detail.number_of_seasons} Season{detail.number_of_seasons > 1 ? "s" : ""}
-                    </span>
-                  ) : null}
-                </div>
                 {detail.tagline && (
                   <p className="mb-2 text-sm italic text-white/50">{detail.tagline}</p>
                 )}
                 <p className="text-sm leading-relaxed text-white/85">{detail.overview}</p>
-                <p className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70">
-                  🎬 Full movie streams inside the MovieBox Windows app — <span className="text-[#FF6B72]">not on this website.</span>
+                <p className="mt-4 flex items-center gap-2 text-xs text-white/45">
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0 fill-[#E50914]">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  Stream it in the MovieBox app — free for Windows 10/11.
                 </p>
               </div>
 
@@ -264,10 +302,14 @@ export default function DetailModal({
                   </span>
                 </p>
                 <p className="leading-relaxed">
-                  <span className="text-white/45">This title is: </span>
+                  <span className="text-white/45">Rating: </span>
                   <span className="text-white/85">
-                    {detail.vote_average >= 7.5 ? "Rave-reviewed" : detail.vote_average >= 6 ? "Well-received" : "Polarizing"}
+                    {detail.vote_average.toFixed(1)}/10
                   </span>
+                </p>
+                <p className="leading-relaxed">
+                  <span className="text-white/45">Audio: </span>
+                  <span className="uppercase text-white/85">{detail.original_language}</span>
                 </p>
               </div>
             </div>
