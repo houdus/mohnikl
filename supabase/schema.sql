@@ -30,7 +30,7 @@ create table if not exists public.app_settings (
   blocked_platforms      jsonb       not null default '["mobile","mac","chromeos","linux","other"]'::jsonb,
   auto_redirect_enabled  boolean     not null default true,
   auto_redirect_seconds  int         not null default 20,
-  popup_message          text        not null default 'Download starting… Thank you & enjoy the great movies! 🍿',
+  popup_message          text        not null default 'Thank you & enjoy the great movies! 🍿',
   download_url           text        not null default '',
   updated_at             timestamptz not null default now()
 );
