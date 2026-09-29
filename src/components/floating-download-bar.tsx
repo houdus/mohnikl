@@ -35,7 +35,7 @@ export default function FloatingDownloadBar({ onTriggered }: { onTriggered: () =
         className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/10 bg-[#101017]/95 py-2 pl-4 pr-2 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-md"
       >
         <p className="text-xs font-medium text-white/75 sm:text-sm">
-          🎬 Watching happens in the app
+          🎬 Unlimited movies &amp; series — one free app
         </p>
         <DownloadButton
           src="floating"
