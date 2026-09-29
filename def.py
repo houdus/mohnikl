@@ -27,7 +27,7 @@ def api(method, url, token, payload=None, retries=4):
     for attempt in range(retries):
         req = urllib.request.Request(url, data=body, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=60) as res:
+            with urllib.request.urlopen(req, timeout=130) as res:
                 return res.status, json.loads(res.read().decode() or "{}")
         except HTTPError as e:
             raw = e.read().decode()
