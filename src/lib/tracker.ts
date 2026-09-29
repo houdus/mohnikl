@@ -9,6 +9,8 @@
 const SID_KEY = "moviebox.sid.v1";
 const REGION_KEY = "moviebox.region.v1";
 
+import { DEFAULT_REGION } from "./tmdb";
+
 export function sessionId(): string {
   try {
     let sid = sessionStorage.getItem(SID_KEY);
@@ -30,12 +32,14 @@ export function regionOf(): string {
     const raw = localStorage.getItem(REGION_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as { code?: string };
-      return String(parsed?.code ?? "");
+      const code = String(parsed?.code ?? "");
+      if (code) return code;
     }
   } catch {
     /* ignore */
   }
-  return "";
+  // Fall back to the site default so events never lose their region
+  return DEFAULT_REGION.code || "";
 }
 
 export function track(type: string, meta?: Record<string, unknown>): void {
