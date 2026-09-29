@@ -197,12 +197,6 @@ export default function Navbar({
               </span>
             )}
           </button>
-
-          {/* Avatar */}
-          <div
-            className="hidden h-8 w-8 shrink-0 rounded-md bg-gradient-to-br from-[#FF4B2B] to-[#E50914] sm:block"
-            aria-hidden="true"
-          />
         </div>
       </nav>
     </header>
